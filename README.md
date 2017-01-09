@@ -18,7 +18,7 @@ GET /v1/service_brokers/p-redis/service_bindings
 #### Parameters
 
 | Name | Description | Example Values | Valid |
-| - | - | - | - |
+| :--- | :---------- | :------------- | :---- |
 | name | service broker name | p-redis | |
 | org_name | organization name | org_name=org1 | |
 | space_name | space name | org_name=org1&space_name=space11 | if org_name and space_name specified |
