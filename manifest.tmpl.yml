@@ -1,0 +1,23 @@
+---
+applications:
+- name: sbire
+  instances: 1
+  memory: 512M
+  host: <app_hostname>
+  domain: <my-domain.cf.io>
+  path: sbire-<latest_release_version>.jar
+  env:
+    # basic auth credentials
+    SECURITY_USER_NAME: user
+    SECURITY_USER_PASSWORD: changeit
+    # CC api host
+    CLOUDFOUNDRY_HOST:
+    # CC user
+    CLOUDFOUNDRY_USER:
+    # CC password
+    CLOUDFOUNDRY_PASSWORD:
+    # CC org
+    CLOUDFOUNDRY_ORGANIZATION:
+    # CC space
+    CLOUDFOUNDRY_SPACE:
+    CLOUDFOUNDRY_SKIP_SSL_VALIDATION: true|false
