@@ -7,6 +7,7 @@ import reactor.core.publisher.Flux;
  */
 public interface ServiceBindingsService {
 
-    Flux<ServiceBindingSummary> list(ListServiceBindingsRequest request);
+    Flux<ServiceBindingDetail> list(ListServiceBindingsRequest request);
 
+    Flux<ServiceBindingDetail> rebind(ImmutableRebindServiceBindingsRequest request);
 }

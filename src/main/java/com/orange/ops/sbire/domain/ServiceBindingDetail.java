@@ -6,13 +6,17 @@ import org.immutables.value.Value;
  * @author Sebastien Bortolussi
  */
 @Value.Immutable
-public abstract class ServiceBindingSummary {
+public abstract class ServiceBindingDetail {
 
     public abstract String getId();
 
-    public abstract String getServiceInstance();
+    public abstract String getServiceInstanceId();
 
-    public abstract String getApplication();
+    public abstract String getServiceInstanceName();
+
+    public abstract String getApplicationId();
+
+    public abstract String getApplicationName();
 
     public abstract String getServicePlan();
 
