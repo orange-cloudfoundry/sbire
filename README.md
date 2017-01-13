@@ -1,4 +1,4 @@
-# Sbire
+# Sbire [![Build Status](https://travis-ci.org/orange-cloudfoundry/sbire.svg?branch=master)](https://travis-ci.org/orange-cloudfoundry/sbire)
 
 Automate Cloud Foundry PaaS Ops tasks on a service broker.
 
