@@ -1,11 +1,10 @@
 package com.orange.ops.sbire.controller;
 
-import com.orange.ops.sbire.domain.ImmutableRebindServiceBindingsRequest;
-import com.orange.ops.sbire.domain.ImmutableServiceBindingDetail;
-import com.orange.ops.sbire.domain.ServiceBindingsService;
+import com.orange.ops.sbire.domain.*;
 import com.tngtech.jgiven.Stage;
 import com.tngtech.jgiven.annotation.Table;
 import com.tngtech.jgiven.integration.spring.JGivenStage;
+import org.cloudfoundry.client.v2.Metadata;
 import org.mockito.Answers;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,8 +13,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
+import java.util.stream.Stream;
+
+import static org.cloudfoundry.util.test.TestObjects.fill;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -34,11 +36,28 @@ public class RebindServiceBindingsControllerStage extends Stage<RebindServiceBin
 
     private ResultActions perform;
 
+    private static ImmutableRebindServiceBindingsResponse toRebindServiceBindingsResponse(ImmutableServiceBindingDetail... serviceBindings) {
+
+        final ImmutableRebindServiceBindingsResponse.Builder responseBuilder = fill(ImmutableRebindServiceBindingsResponse.builder());
+
+        Stream.of(serviceBindings)
+                .map(serviceBinding -> ImmutableServiceBindingDetailResource.builder()
+                        .metadata(fill(Metadata.builder())
+                                .id(serviceBinding.getId())
+                                .build())
+                        .entity(fill(ImmutableServiceBindingDetail.builder()).build())
+                        .build()
+                )
+                .forEach(responseBuilder::addResources);
+
+        return responseBuilder.totalResults(1).build();
+    }
+
     public RebindServiceBindingsControllerStage service_broker_service_bindings(@Table ImmutableServiceBindingDetail... serviceBindings) {
         BDDMockito.given(this.serviceBindingsService.rebind(ImmutableRebindServiceBindingsRequest.builder()
                 .serviceBrokerName("p-redis")
                 .build()))
-                .willReturn(Flux.just(serviceBindings));
+                .willReturn(Mono.just(toRebindServiceBindingsResponse(serviceBindings)));
         return self();
     }
 
@@ -47,7 +66,7 @@ public class RebindServiceBindingsControllerStage extends Stage<RebindServiceBin
                 .serviceBrokerName("p-redis")
                 .orgName("org1")
                 .build()))
-                .willReturn(Flux.just(serviceBindings));
+                .willReturn(Mono.just(toRebindServiceBindingsResponse(serviceBindings)));
         return self();
     }
 
@@ -57,7 +76,7 @@ public class RebindServiceBindingsControllerStage extends Stage<RebindServiceBin
                 .orgName("org1")
                 .spaceName("space12")
                 .build()))
-                .willReturn(Flux.just(serviceBindings));
+                .willReturn(Mono.just(toRebindServiceBindingsResponse(serviceBindings)));
         return self();
     }
 
@@ -66,7 +85,7 @@ public class RebindServiceBindingsControllerStage extends Stage<RebindServiceBin
                 .serviceBrokerName("p-redis")
                 .serviceLabel("p-redis")
                 .build()))
-                .willReturn(Flux.just(serviceBindings));
+                .willReturn(Mono.just(toRebindServiceBindingsResponse(serviceBindings)));
         return self();
     }
 
@@ -75,7 +94,7 @@ public class RebindServiceBindingsControllerStage extends Stage<RebindServiceBin
                 .serviceBrokerName("p-redis")
                 .servicePlanName("dedicated-vm")
                 .build()))
-                .willReturn(Flux.just(serviceBindings));
+                .willReturn(Mono.just(toRebindServiceBindingsResponse(serviceBindings)));
         return self();
     }
 
@@ -84,7 +103,7 @@ public class RebindServiceBindingsControllerStage extends Stage<RebindServiceBin
                 .serviceBrokerName("p-redis")
                 .serviceInstanceName("my-redis-112")
                 .build()))
-                .willReturn(Flux.just(serviceBindings));
+                .willReturn(Mono.just(toRebindServiceBindingsResponse(serviceBindings)));
         return self();
     }
 

@@ -22,12 +22,10 @@ import org.cloudfoundry.client.v2.serviceplans.*;
 import org.cloudfoundry.client.v2.services.*;
 import org.cloudfoundry.client.v2.spaces.*;
 import org.mockito.Mockito;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -53,10 +51,46 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
     private final Organizations organizations = mock(Organizations.class, RETURNS_SMART_NULLS);
     private final CloudFoundryClient cloudFoundryClient = mock(CloudFoundryClient.class, RETURNS_SMART_NULLS);
     private final DefaultServiceBindingsService serviceBindingsService = new DefaultServiceBindingsService(cloudFoundryClient);
-    private Flux<ServiceBindingDetail> serviceBindingSummaryFlux;
+    private Mono<com.orange.ops.sbire.domain.ListServiceBindingsResponse> listServiceBindings;
+    private Mono<RebindServiceBindingsResponse> rebindServiceBindings;
+
 
     public ServiceBindingsStage() {
         super();
+    }
+
+    private static ListServiceBindingsResponse toListServiceBindingsResponse(int count, ImmutableServiceBindingDetail... serviceBindings) {
+
+        final ImmutableListServiceBindingsResponse.Builder responseBuilder = ImmutableListServiceBindingsResponse.builder();
+
+        Stream.of(serviceBindings)
+                .map(serviceBinding -> ImmutableServiceBindingDetailResource.builder()
+                        .metadata(fill(Metadata.builder())
+                                .id(serviceBinding.getId())
+                                .build())
+                        .entity(ImmutableServiceBindingDetail.builder().from(serviceBinding).build())
+                        .build()
+                )
+                .forEach(responseBuilder::addResources);
+
+        return responseBuilder.totalResults(count).totalPages(1).build();
+    }
+
+    private static RebindServiceBindingsResponse toRebindServiceBindingsResponse(int count, ImmutableServiceBindingDetail... serviceBindings) {
+
+        final ImmutableRebindServiceBindingsResponse.Builder responseBuilder = ImmutableRebindServiceBindingsResponse.builder();
+
+        Stream.of(serviceBindings)
+                .map(serviceBinding -> ImmutableServiceBindingDetailResource.builder()
+                        .metadata(fill(Metadata.builder())
+                                .id(serviceBinding.getId())
+                                .build())
+                        .entity(ImmutableServiceBindingDetail.builder().from(serviceBinding).build())
+                        .build()
+                )
+                .forEach(responseBuilder::addResources);
+
+        return responseBuilder.totalResults(count).totalPages(1).build();
     }
 
     private static void requestOrganizations(CloudFoundryClient cloudFoundryClient, String organization, String organizationId) {
@@ -297,7 +331,7 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
                         .page(1)
                         .build()))
                 .thenReturn(Mono
-                        .just(fill(ListServiceBindingsResponse.builder())
+                        .just(fill(org.cloudfoundry.client.v2.servicebindings.ListServiceBindingsResponse.builder())
                                 .resource(fill(ServiceBindingResource.builder())
                                         .metadata(fill(Metadata.builder())
                                                 .id(serviceBindingId)
@@ -380,6 +414,20 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
                                 .build()));
     }
 
+    private static ImmutableListServiceBindingsResponse emptyListServiceBindingsResponse() {
+        return ImmutableListServiceBindingsResponse.builder()
+                .totalPages(0)
+                .totalResults(0)
+                .build();
+    }
+
+    private static RebindServiceBindingsResponse emptyServiceBindingsResponse() {
+        return ImmutableRebindServiceBindingsResponse.builder()
+                .totalPages(0)
+                .totalResults(0)
+                .build();
+    }
+
     private void requestSpace(CloudFoundryClient cloudFoundryClient, String spaceId, String spaceName, String organizationId) {
         Mockito.when(cloudFoundryClient.spaces()
                 .get(GetSpaceRequest.builder()
@@ -445,9 +493,11 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
         requestSpaces(this.cloudFoundryClient,
                 ImmutableSpaceSummary.builder().id("space11").name("space11").organizationId("org1").organizationName("org1").build(),
                 ImmutableSpaceSummary.builder().id("space12").name("space12").organizationId("org2").organizationName("org2").build(),
-                ImmutableSpaceSummary.builder().id("space22").name("space22").organizationId("org2").organizationName("org2").build());
+                ImmutableSpaceSummary.builder().id("space22").name("space22").organizationId("org2").organizationName("org2").build()
+        );
         requestOrganizationSpaces(this.cloudFoundryClient, "org1",
-                ImmutableSpaceSummary.builder().id("space11").name("space11").organizationId("org1").organizationName("org1").build());
+                ImmutableSpaceSummary.builder().id("space11").name("space11").organizationId("org1").organizationName("org1").build()
+        );
         requestOrganizationSpaces(this.cloudFoundryClient, "org2",
                 ImmutableSpaceSummary.builder().id("space12").name("space12").organizationId("org2").organizationName("org2").build(),
                 ImmutableSpaceSummary.builder().id("space22").name("space22").organizationId("org2").organizationName("org2").build()
@@ -520,24 +570,35 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
     }
 
     public ServiceBindingsStage paas_ops_lists_service_broker_$_service_bindings(String serviceBroker) {
-        serviceBindingSummaryFlux = serviceBindingsService.list(ImmutableListServiceBindingsRequest.builder()
+        listServiceBindings = serviceBindingsService.list(ImmutableListServiceBindingsRequest.builder()
                 .serviceBrokerName(serviceBroker)
                 .build());
         return self();
     }
 
-    public ServiceBindingsStage she_should_get_service_bindings(@Table ImmutableServiceBindingDetail... serviceBindings) {
-        serviceBindingSummaryFlux
-                .collectList()
+    public ServiceBindingsStage she_should_get_$_service_bindings(int count, @Table ImmutableServiceBindingDetail... serviceBindings) {
+        listServiceBindings
+                .log()
                 .as(StepVerifier::create)
-                .expectNext(Arrays.asList(serviceBindings))
+                .expectNext(toListServiceBindingsResponse(count, serviceBindings))
                 .expectComplete()
                 .verify(Duration.ofSeconds(TIMEOUT_SECONDS));
         return self();
     }
 
+    public ServiceBindingsStage she_should_get_$_new_service_bindings(int count, @Table ImmutableServiceBindingDetail... serviceBindings) {
+        rebindServiceBindings
+                .log()
+                .as(StepVerifier::create)
+                .expectNext(toRebindServiceBindingsResponse(count, serviceBindings))
+                .expectComplete()
+                .verify(Duration.ofSeconds(TIMEOUT_SECONDS));
+        ;
+        return self();
+    }
+
     public ServiceBindingsStage paas_ops_lists_service_broker_$_service_bindings_for_org(String serviceBroker, String org) {
-        serviceBindingSummaryFlux = serviceBindingsService.list(ImmutableListServiceBindingsRequest.builder()
+        listServiceBindings = serviceBindingsService.list(ImmutableListServiceBindingsRequest.builder()
                 .serviceBrokerName(serviceBroker)
                 .orgName(org)
                 .build());
@@ -545,7 +606,7 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
     }
 
     public ServiceBindingsStage paas_ops_lists_service_broker_$_service_bindings_for_org_$_and_space(String serviceBroker, String org, String space) {
-        serviceBindingSummaryFlux = serviceBindingsService.list(ImmutableListServiceBindingsRequest.builder()
+        listServiceBindings = serviceBindingsService.list(ImmutableListServiceBindingsRequest.builder()
                 .serviceBrokerName(serviceBroker)
                 .orgName(org)
                 .spaceName(space)
@@ -554,7 +615,7 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
     }
 
     public ServiceBindingsStage paas_ops_lists_service_broker_$_service_bindings_for_service_label(String serviceBroker, String serviceLabel) {
-        serviceBindingSummaryFlux = serviceBindingsService.list(ImmutableListServiceBindingsRequest.builder()
+        listServiceBindings = serviceBindingsService.list(ImmutableListServiceBindingsRequest.builder()
                 .serviceBrokerName(serviceBroker)
                 .serviceLabel(serviceLabel)
                 .build());
@@ -562,7 +623,7 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
     }
 
     public ServiceBindingsStage paas_ops_lists_service_broker_$_service_bindings_for_service_plan_name(String serviceBroker, String servicePlanName) {
-        serviceBindingSummaryFlux = serviceBindingsService.list(ImmutableListServiceBindingsRequest.builder()
+        listServiceBindings = serviceBindingsService.list(ImmutableListServiceBindingsRequest.builder()
                 .serviceBrokerName(serviceBroker)
                 .servicePlanName(servicePlanName)
                 .build());
@@ -570,7 +631,7 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
     }
 
     public ServiceBindingsStage paas_ops_lists_service_broker_$_service_bindings_for_service_instance(String serviceBroker, String serviceInstanceName) {
-        serviceBindingSummaryFlux = serviceBindingsService.list(ImmutableListServiceBindingsRequest.builder()
+        listServiceBindings = serviceBindingsService.list(ImmutableListServiceBindingsRequest.builder()
                 .serviceBrokerName(serviceBroker)
                 .serviceInstanceName(serviceInstanceName)
                 .build());
@@ -578,15 +639,35 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
     }
 
     public ServiceBindingsStage she_should_get_no_service_binding() {
-        serviceBindingSummaryFlux
+        listServiceBindings
+                .log()
                 .as(StepVerifier::create)
+                .expectNext(emptyListServiceBindingsResponse())
+                .expectComplete()
+                .verify(Duration.ofSeconds(TIMEOUT_SECONDS));
+        return self();
+    }
+
+    public ServiceBindingsStage she_should_get_no_service_binding_created() {
+        rebindServiceBindings
+                .log()
+                .as(StepVerifier::create)
+                .expectNext(emptyServiceBindingsResponse())
                 .expectComplete()
                 .verify(Duration.ofSeconds(TIMEOUT_SECONDS));
         return self();
     }
 
     public ServiceBindingsStage she_should_get_error(String message) {
-        serviceBindingSummaryFlux
+        listServiceBindings
+                .as(StepVerifier::create)
+                .consumeErrorWith(t -> assertThat(t).isInstanceOf(IllegalArgumentException.class).hasMessage(message))
+                .verify(Duration.ofSeconds(TIMEOUT_SECONDS));
+        return self();
+    }
+
+    public ServiceBindingsStage she_should_get_a_rebind_error(String message) {
+        rebindServiceBindings
                 .as(StepVerifier::create)
                 .consumeErrorWith(t -> assertThat(t).isInstanceOf(IllegalArgumentException.class).hasMessage(message))
                 .verify(Duration.ofSeconds(TIMEOUT_SECONDS));
@@ -594,14 +675,14 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
     }
 
     public ServiceBindingsStage paas_ops_rebinds_service_broker_$_service_bindings(String serviceBroker) {
-        serviceBindingSummaryFlux = serviceBindingsService.rebind(ImmutableRebindServiceBindingsRequest.builder()
+        rebindServiceBindings = serviceBindingsService.rebind(ImmutableRebindServiceBindingsRequest.builder()
                 .serviceBrokerName(serviceBroker)
                 .build());
         return self();
     }
 
     public ServiceBindingsStage paas_ops_rebinds_service_broker_$_service_bindings_for_org(String serviceBroker, String org) {
-        serviceBindingSummaryFlux = serviceBindingsService.rebind(ImmutableRebindServiceBindingsRequest.builder()
+        rebindServiceBindings = serviceBindingsService.rebind(ImmutableRebindServiceBindingsRequest.builder()
                 .serviceBrokerName(serviceBroker)
                 .orgName(org)
                 .build());
@@ -609,7 +690,7 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
     }
 
     public ServiceBindingsStage paas_ops_rebinds_service_broker_$_service_bindings_for_org_$_and_space(String serviceBroker, String org, String space) {
-        serviceBindingSummaryFlux = serviceBindingsService.rebind(ImmutableRebindServiceBindingsRequest.builder()
+        rebindServiceBindings = serviceBindingsService.rebind(ImmutableRebindServiceBindingsRequest.builder()
                 .serviceBrokerName(serviceBroker)
                 .orgName(org)
                 .spaceName(space)
@@ -618,7 +699,7 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
     }
 
     public ServiceBindingsStage paas_ops_rebinds_service_broker_$_service_bindings_for_service_label(String serviceBroker, String serviceLabel) {
-        serviceBindingSummaryFlux = serviceBindingsService.rebind(ImmutableRebindServiceBindingsRequest.builder()
+        rebindServiceBindings = serviceBindingsService.rebind(ImmutableRebindServiceBindingsRequest.builder()
                 .serviceBrokerName(serviceBroker)
                 .serviceLabel(serviceLabel)
                 .build());
@@ -626,7 +707,7 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
     }
 
     public ServiceBindingsStage paas_ops_rebinds_service_broker_$_service_bindings_for_service_plan_name(String serviceBroker, String servicePlanName) {
-        serviceBindingSummaryFlux = serviceBindingsService.rebind(ImmutableRebindServiceBindingsRequest.builder()
+        rebindServiceBindings = serviceBindingsService.rebind(ImmutableRebindServiceBindingsRequest.builder()
                 .serviceBrokerName(serviceBroker)
                 .servicePlanName(servicePlanName)
                 .build());
@@ -634,7 +715,7 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
     }
 
     public ServiceBindingsStage paas_ops_rebinds_service_broker_$_service_bindings_for_service_instance(String serviceBroker, String serviceInstanceName) {
-        serviceBindingSummaryFlux = serviceBindingsService.rebind(ImmutableRebindServiceBindingsRequest.builder()
+        rebindServiceBindings = serviceBindingsService.rebind(ImmutableRebindServiceBindingsRequest.builder()
                 .serviceBrokerName(serviceBroker)
                 .serviceInstanceName(serviceInstanceName)
                 .build());

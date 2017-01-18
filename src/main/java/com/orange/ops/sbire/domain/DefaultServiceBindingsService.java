@@ -1,6 +1,7 @@
 package com.orange.ops.sbire.domain;
 
 import org.cloudfoundry.client.CloudFoundryClient;
+import org.cloudfoundry.client.v2.Metadata;
 import org.cloudfoundry.client.v2.applications.ApplicationEntity;
 import org.cloudfoundry.client.v2.applications.GetApplicationRequest;
 import org.cloudfoundry.client.v2.applications.GetApplicationResponse;
@@ -29,6 +30,7 @@ import reactor.util.function.Tuples;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
 import static org.cloudfoundry.util.tuple.TupleUtils.function;
@@ -232,31 +234,46 @@ public class DefaultServiceBindingsService implements ServiceBindingsService {
                                 .build()));
     }
 
-    private static ServiceBindingDetail toServiceBindingDetail(ServiceBindingResource serviceBinding, ServiceInstanceResource serviceInstance, ServicePlanEntity servicePlan, ServiceEntity service, SpaceResource space, ApplicationEntity application, GetOrganizationResponse organization) {
-        return ImmutableServiceBindingDetail.builder()
-                .id(ResourceUtils.getId(serviceBinding))
-                .serviceInstanceId(ResourceUtils.getId(serviceInstance))
-                .serviceInstanceName(ResourceUtils.getEntity(serviceInstance).getName())
-                .service(service.getLabel())
-                .servicePlan(servicePlan.getName())
-                .applicationId(ResourceUtils.getEntity(serviceBinding).getApplicationId())
-                .applicationName(application.getName())
-                .organization(ResourceUtils.getEntity(organization).getName())
-                .space(ResourceUtils.getEntity(space).getName())
+    private static ServiceBindingDetailResource toServiceBindingDetailResource(ServiceBindingResource serviceBinding, ServiceInstanceResource serviceInstance, ServicePlanEntity servicePlan, ServiceEntity service, SpaceResource space, ApplicationEntity application, OrganizationEntity organization) {
+        return ImmutableServiceBindingDetailResource.builder()
+                .entity(ImmutableServiceBindingDetail.builder()
+                        .id(ResourceUtils.getId(serviceBinding))
+                        .serviceInstanceId(ResourceUtils.getId(serviceInstance))
+                        .serviceInstanceName(ResourceUtils.getEntity(serviceInstance).getName())
+                        .service(service.getLabel())
+                        .servicePlan(servicePlan.getName())
+                        .applicationId(ResourceUtils.getEntity(serviceBinding).getApplicationId())
+                        .applicationName(application.getName())
+                        .organization(organization.getName())
+                        .space(ResourceUtils.getEntity(space).getName())
+                        .build()
+                )
+                .metadata(Metadata.builder()
+                        .from(serviceBinding.getMetadata())
+                        .build()
+                )
                 .build();
     }
 
-    private static ServiceBindingDetail toServiceBindingDetail2(CreateServiceBindingResponse serviceBinding, ServiceInstanceEntity serviceInstance, ServicePlanEntity servicePlan, ServiceEntity service, SpaceEntity space, ApplicationEntity application, OrganizationEntity organization) {
-        return ImmutableServiceBindingDetail.builder()
-                .id(ResourceUtils.getId(serviceBinding))
-                .serviceInstanceId(ResourceUtils.getEntity(serviceBinding).getServiceInstanceId())
-                .serviceInstanceName(serviceInstance.getName())
-                .service(service.getLabel())
-                .servicePlan(servicePlan.getName())
-                .applicationId(ResourceUtils.getEntity(serviceBinding).getApplicationId())
-                .applicationName(application.getName())
-                .organization(organization.getName())
-                .space(space.getName())
+    private static ServiceBindingDetailResource toServiceBindingDetail2(CreateServiceBindingResponse serviceBinding, ServiceInstanceEntity serviceInstance, ServicePlanEntity servicePlan, ServiceEntity service, SpaceEntity space, ApplicationEntity application, OrganizationEntity organization) {
+        return ImmutableServiceBindingDetailResource.builder()
+                .entity(
+                        ImmutableServiceBindingDetail.builder()
+                                .id(ResourceUtils.getId(serviceBinding))
+                                .serviceInstanceId(ResourceUtils.getEntity(serviceBinding).getServiceInstanceId())
+                                .serviceInstanceName(serviceInstance.getName())
+                                .service(service.getLabel())
+                                .servicePlan(servicePlan.getName())
+                                .applicationId(ResourceUtils.getEntity(serviceBinding).getApplicationId())
+                                .applicationName(application.getName())
+                                .organization(organization.getName())
+                                .space(space.getName())
+                                .build()
+                )
+                .metadata(Metadata.builder()
+                        .from(serviceBinding.getMetadata())
+                        .build()
+                )
                 .build();
     }
 
@@ -354,18 +371,30 @@ public class DefaultServiceBindingsService implements ServiceBindingsService {
                         .build());
     }
 
-    public Flux<ServiceBindingDetail> list(ListServiceBindingsRequest request) {
-        return getServiceBindings(request.getServiceBrokerName(),
-                request.getOrgName(),
-                request.getSpaceName(),
-                request.getServiceLabel(),
-                request.getServicePlanName(),
-                request.getServiceInstanceName());
+    public Mono<ListServiceBindingsResponse> list(ListServiceBindingsRequest request) {
+        AtomicInteger countResources = new AtomicInteger();
+        AtomicInteger countPages = new AtomicInteger();
+
+        return
+                getServiceBindings(request.getServiceBrokerName(),
+                        request.getOrgName(),
+                        request.getSpaceName(),
+                        request.getServiceLabel(),
+                        request.getServicePlanName(),
+                        request.getServiceInstanceName()
+                ).doOnNext(binding -> {
+                    countResources.incrementAndGet();
+                    countPages.set(1);
+                })
+                        .collect(ImmutableListServiceBindingsResponse::builder, ImmutableListServiceBindingsResponse.Builder::addResources)
+                        .map(builder -> builder.totalResults(countResources.get()))
+                        .map(builder -> builder.totalPages(countPages.get()))
+                        .map(ImmutableListServiceBindingsResponse.Builder::build);
     }
 
-    private Flux<ServiceBindingDetail> getServiceBindings(String serviceBrokerName, Optional<String> orgName, Optional<String> spaceName, Optional<String> serviceLabel, Optional<String> planName, Optional<String> instanceName) {
+    private Flux<ServiceBindingDetailResource> getServiceBindings(String serviceBrokerName, Optional<String> orgName, Optional<String> spaceName, Optional<String> serviceLabel, Optional<String> planName, Optional<String> instanceName) {
         return getSpaces(orgName, spaceName)
-                .flatMap(space -> requestGetOrganization(cloudFoundryClient, ResourceUtils.getEntity(space).getOrganizationId())
+                .flatMap(space -> getOrganization(cloudFoundryClient, ResourceUtils.getEntity(space).getOrganizationId())
                         .map(organization -> Tuples.of(space, organization)))
                 .flatMap(function((space, organization) -> getSpaceServiceInstances(cloudFoundryClient, ResourceUtils.getId(space), serviceBrokerName, serviceLabel, planName, instanceName)
                         .map(serviceInstance -> Tuples.of(space, organization, serviceInstance))))
@@ -380,7 +409,7 @@ public class DefaultServiceBindingsService implements ServiceBindingsService {
                 .flatMap(function((space, organization, serviceInstance, servicePlan, serviceBinding, service) ->
                         getApplication(cloudFoundryClient, ResourceUtils.getEntity(serviceBinding).getApplicationId())
                                 .map(application -> Tuples.of(serviceBinding, serviceInstance, servicePlan, service, space, application, organization))))
-                .map(function(DefaultServiceBindingsService::toServiceBindingDetail));
+                .map(function(DefaultServiceBindingsService::toServiceBindingDetailResource));
 
     }
 
@@ -389,7 +418,10 @@ public class DefaultServiceBindingsService implements ServiceBindingsService {
     }
 
     @Override
-    public Flux<ServiceBindingDetail> rebind(ImmutableRebindServiceBindingsRequest request) {
+    public Mono<RebindServiceBindingsResponse> rebind(RebindServiceBindingsRequest request) {
+        AtomicInteger countResources = new AtomicInteger();
+        AtomicInteger countPages = new AtomicInteger();
+
         return getServiceBindings(
                 request.getServiceBrokerName(),
                 request.getOrgName(),
@@ -398,8 +430,8 @@ public class DefaultServiceBindingsService implements ServiceBindingsService {
                 request.getServicePlanName(),
                 request.getServiceInstanceName()
         ).doOnNext(binding -> LOGGER.debug("Deleting service binding {}", binding))
-                .flatMap(binding -> deleteServiceBinding(this.cloudFoundryClient, binding.getId())
-                        .then(createServiceBinding(this.cloudFoundryClient, binding.getApplicationId(), binding.getServiceInstanceId(), null))
+                .flatMap(binding -> deleteServiceBinding(this.cloudFoundryClient, ResourceUtils.getId(binding))
+                        .then(createServiceBinding(this.cloudFoundryClient, ResourceUtils.getEntity(binding).getApplicationId(), ResourceUtils.getEntity(binding).getServiceInstanceId(), null))
                         .doOnNext(newBinding -> LOGGER.debug("New service binding {} created", newBinding)))
                 .flatMap(serviceBinding -> Mono.when
                         (
@@ -422,7 +454,16 @@ public class DefaultServiceBindingsService implements ServiceBindingsService {
                 .flatMap(function((serviceBinding, serviceInstance, servicePlan, application, space, organization) ->
                         getService(cloudFoundryClient, Optional.ofNullable(servicePlan.getServiceId()))
                                 .map(service -> Tuples.of(serviceBinding, serviceInstance, servicePlan, service, space, application, organization))))
-                .map(function(DefaultServiceBindingsService::toServiceBindingDetail2));
+                .map(function(DefaultServiceBindingsService::toServiceBindingDetail2))
+                .doOnNext(binding -> {
+                    countResources.incrementAndGet();
+                    countPages.set(1);
+                })
+                .collect(ImmutableRebindServiceBindingsResponse::builder, ImmutableRebindServiceBindingsResponse.Builder::addResources)
+                .map(builder -> builder.totalResults(countResources.get()))
+                .map(builder -> builder.totalPages(countPages.get()))
+                .map(ImmutableRebindServiceBindingsResponse.Builder::build);
     }
+
 
 }

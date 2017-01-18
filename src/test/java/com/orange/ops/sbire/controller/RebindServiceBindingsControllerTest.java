@@ -31,7 +31,7 @@ public class RebindServiceBindingsControllerTest extends SimpleSpringScenarioTes
                 .build());
         when().paas_ops_POST_$_to_rebind_service_bindings("/v1/service_brokers/p-redis/service_bindings");
         then().she_should_get_HTTP_$_response(HttpStatus.CREATED)
-                .she_should_get_json_response("[{\"id\": \"test-id\",\"serviceInstanceName\": \"test-serviceInstanceName\",\"applicationName\": \"test-applicationName\",\"servicePlan\": \"test-servicePlan\",\"service\": \"test-service\",\"space\": \"test-space\",\"organization\": \"test-organization\"}]");
+                .she_should_get_json_response("{\"next_url\":\"test-nextUrl\",\"prev_url\":\"test-previousUrl\",\"total_pages\":1,\"total_results\":1}\"resources\":[{\"entity\":{\"id\": \"test-id\",\"serviceInstanceName\": \"test-serviceInstanceName\",\"applicationName\": \"test-applicationName\",\"servicePlan\": \"test-servicePlan\",\"service\": \"test-service\",\"space\": \"test-space\",\"organization\": \"test-organization\"}}]");
     }
 
     @Test
@@ -41,7 +41,7 @@ public class RebindServiceBindingsControllerTest extends SimpleSpringScenarioTes
                 .build());
         when().paas_ops_POST_$_to_rebind_service_bindings("/v1/service_brokers/p-redis/service_bindings?org_name=org1");
         then().she_should_get_HTTP_$_response(HttpStatus.CREATED)
-                .she_should_get_json_response("[{\"id\": \"test-id\",\"serviceInstanceName\": \"test-serviceInstanceName\",\"applicationName\": \"test-applicationName\",\"servicePlan\": \"test-servicePlan\",\"service\": \"test-service\",\"space\": \"test-space\",\"organization\": \"org1\"}]");
+                .she_should_get_json_response("{\"next_url\":\"test-nextUrl\",\"prev_url\":\"test-previousUrl\",\"total_pages\":1,\"total_results\":1}\"resources\":[{\"entity\":{\"id\": \"test-id\",\"serviceInstanceName\": \"test-serviceInstanceName\",\"applicationName\": \"test-applicationName\",\"servicePlan\": \"test-servicePlan\",\"service\": \"test-service\",\"space\": \"test-space\",\"organization\": \"org1\"}}]");
     }
 
     @Test
@@ -52,7 +52,7 @@ public class RebindServiceBindingsControllerTest extends SimpleSpringScenarioTes
                 .build());
         when().paas_ops_POST_$_to_rebind_service_bindings("/v1/service_brokers/p-redis/service_bindings?org_name=org1&space_name=space12");
         then().she_should_get_HTTP_$_response(HttpStatus.CREATED)
-                .she_should_get_json_response("[{\"id\": \"test-id\",\"serviceInstanceName\": \"test-serviceInstanceName\",\"applicationName\": \"test-applicationName\",\"servicePlan\": \"test-servicePlan\",\"service\": \"test-service\",\"space\": \"space12\",\"organization\": \"org1\"}]");
+                .she_should_get_json_response("{\"next_url\":\"test-nextUrl\",\"prev_url\":\"test-previousUrl\",\"total_pages\":1,\"total_results\":1}\"resources\":[{\"entity\":{\"id\": \"test-id\",\"serviceInstanceName\": \"test-serviceInstanceName\",\"applicationName\": \"test-applicationName\",\"servicePlan\": \"test-servicePlan\",\"service\": \"test-service\",\"space\": \"space12\",\"organization\": \"org1\"}}]");
 
     }
 
@@ -63,7 +63,7 @@ public class RebindServiceBindingsControllerTest extends SimpleSpringScenarioTes
                 .build());
         when().paas_ops_POST_$_to_rebind_service_bindings("/v1/service_brokers/p-redis/service_bindings?service_label=p-redis");
         then().she_should_get_HTTP_$_response(HttpStatus.CREATED)
-                .she_should_get_json_response("[{\"id\": \"test-id\",\"serviceInstanceName\": \"test-serviceInstanceName\",\"applicationName\": \"test-applicationName\",\"servicePlan\": \"test-servicePlan\",\"service\": \"p-redis\",\"space\": \"test-space\",\"organization\": \"test-organization\"}]");
+                .she_should_get_json_response("{\"next_url\":\"test-nextUrl\",\"prev_url\":\"test-previousUrl\",\"total_pages\":1,\"total_results\":1}\"resources\":[{\"entity\":{\"id\": \"test-id\",\"serviceInstanceName\": \"test-serviceInstanceName\",\"applicationName\": \"test-applicationName\",\"servicePlan\": \"test-servicePlan\",\"service\": \"p-redis\",\"space\": \"test-space\",\"organization\": \"test-organization\"}}]");
     }
 
     @Test
@@ -73,7 +73,7 @@ public class RebindServiceBindingsControllerTest extends SimpleSpringScenarioTes
                 .build());
         when().paas_ops_POST_$_to_rebind_service_bindings("/v1/service_brokers/p-redis/service_bindings?plan_name=dedicated-vm");
         then().she_should_get_HTTP_$_response(HttpStatus.CREATED)
-                .she_should_get_json_response("[{\"id\": \"test-id\",\"serviceInstanceName\": \"test-serviceInstanceName\",\"applicationName\": \"test-applicationName\",\"servicePlan\": \"dedicated-vm\",\"service\": \"test-service\",\"space\": \"test-space\",\"organization\": \"test-organization\"}]");
+                .she_should_get_json_response("{\"next_url\":\"test-nextUrl\",\"prev_url\":\"test-previousUrl\",\"total_pages\":1,\"total_results\":1}\"resources\":[{\"entity\":{\"id\": \"test-id\",\"serviceInstanceName\": \"test-serviceInstanceName\",\"applicationName\": \"test-applicationName\",\"servicePlan\": \"dedicated-vm\",\"service\": \"test-service\",\"space\": \"test-space\",\"organization\": \"test-organization\"}}]");
 
     }
 
@@ -84,7 +84,7 @@ public class RebindServiceBindingsControllerTest extends SimpleSpringScenarioTes
                 .build());
         when().paas_ops_POST_$_to_rebind_service_bindings("/v1/service_brokers/p-redis/service_bindings?instance_name=my-redis-112");
         then().she_should_get_HTTP_$_response(HttpStatus.CREATED)
-                .she_should_get_json_response("[{\"id\": \"test-id\",\"serviceInstanceName\": \"my-redis-112\",\"applicationName\": \"test-applicationName\",\"servicePlan\": \"test-servicePlan\",\"service\": \"test-service\",\"space\": \"test-space\",\"organization\": \"test-organization\"}]");
+                .she_should_get_json_response("{\"next_url\":\"test-nextUrl\",\"prev_url\":\"test-previousUrl\",\"total_pages\":1,\"total_results\":1}\"resources\":[{\"entity\":{\"id\": \"test-id\",\"serviceInstanceName\": \"my-redis-112\",\"applicationName\": \"test-applicationName\",\"servicePlan\": \"test-servicePlan\",\"service\": \"test-service\",\"space\": \"test-space\",\"organization\": \"test-organization\"}}]");
     }
 
 }
