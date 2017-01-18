@@ -62,7 +62,7 @@ public class ListServiceBindingsTest extends SimpleScenarioTest<ServiceBindingsS
     public void paas_ops_lists_all_service_broker_service_bindings() throws Exception {
         given().service_bindings(ALL_SERVICE_BINDINGS);
         when().paas_ops_lists_service_broker_$_service_bindings("p-redis");
-        then().she_should_get_service_bindings(ALL_SERVICE_BINDINGS);
+        then().she_should_get_$_service_bindings(4, ALL_SERVICE_BINDINGS);
     }
 
     @Test
@@ -76,31 +76,30 @@ public class ListServiceBindingsTest extends SimpleScenarioTest<ServiceBindingsS
     public void paas_ops_lists_service_broker_service_bindings_for_an_org() throws Exception {
         given().service_bindings(ALL_SERVICE_BINDINGS);
         when().paas_ops_lists_service_broker_$_service_bindings_for_org("p-redis", "org1");
-        then().she_should_get_service_bindings
-                (
-                        ImmutableServiceBindingDetail.builder()
-                                .id("aaa")
-                                .serviceInstanceId("my-redis-111-id")
-                                .serviceInstanceName("my-redis-111")
-                                .servicePlan("shared-vm")
-                                .service("p-redis")
-                                .space("space11")
-                                .organization("org1")
-                                .applicationId("my-app-id")
-                                .applicationName("my-app")
-                                .build(),
-                        ImmutableServiceBindingDetail.builder()
-                                .id("bbb")
-                                .serviceInstanceId("my-redis-211-id")
-                                .serviceInstanceName("my-redis-211")
-                                .servicePlan("dedicated-vm")
-                                .service("p-redis")
-                                .space("space11")
-                                .organization("org1")
-                                .applicationId("my-app-id")
-                                .applicationName("my-app")
-                                .build()
-                );
+        then().she_should_get_$_service_bindings(2,
+                ImmutableServiceBindingDetail.builder()
+                        .id("aaa")
+                        .serviceInstanceId("my-redis-111-id")
+                        .serviceInstanceName("my-redis-111")
+                        .servicePlan("shared-vm")
+                        .service("p-redis")
+                        .space("space11")
+                        .organization("org1")
+                        .applicationId("my-app-id")
+                        .applicationName("my-app")
+                        .build(),
+                ImmutableServiceBindingDetail.builder()
+                        .id("bbb")
+                        .serviceInstanceId("my-redis-211-id")
+                        .serviceInstanceName("my-redis-211")
+                        .servicePlan("dedicated-vm")
+                        .service("p-redis")
+                        .space("space11")
+                        .organization("org1")
+                        .applicationId("my-app-id")
+                        .applicationName("my-app")
+                        .build()
+        );
     }
 
     @Test
@@ -114,20 +113,19 @@ public class ListServiceBindingsTest extends SimpleScenarioTest<ServiceBindingsS
     public void paas_ops_lists_service_broker_service_bindings_for_a_space() throws Exception {
         given().service_bindings(ALL_SERVICE_BINDINGS);
         when().paas_ops_lists_service_broker_$_service_bindings_for_org_$_and_space("p-redis", "org2", "space12");
-        then().she_should_get_service_bindings
-                (
-                        ImmutableServiceBindingDetail.builder()
-                                .id("ccc")
-                                .serviceInstanceId("my-redis-112-id")
-                                .serviceInstanceName("my-redis-112")
-                                .servicePlan("shared-vm")
-                                .service("p-redis")
-                                .space("space12")
-                                .organization("org2")
-                                .applicationId("my-app-id")
-                                .applicationName("my-app")
-                                .build()
-                );
+        then().she_should_get_$_service_bindings(1,
+                ImmutableServiceBindingDetail.builder()
+                        .id("ccc")
+                        .serviceInstanceId("my-redis-112-id")
+                        .serviceInstanceName("my-redis-112")
+                        .servicePlan("shared-vm")
+                        .service("p-redis")
+                        .space("space12")
+                        .organization("org2")
+                        .applicationId("my-app-id")
+                        .applicationName("my-app")
+                        .build()
+        );
     }
 
     @Test
@@ -141,7 +139,7 @@ public class ListServiceBindingsTest extends SimpleScenarioTest<ServiceBindingsS
     public void paas_ops_lists_service_broker_service_bindings_for_a_service_label() throws Exception {
         given().service_bindings(ALL_SERVICE_BINDINGS);
         when().paas_ops_lists_service_broker_$_service_bindings_for_service_label("p-redis", "p-redis");
-        then().she_should_get_service_bindings(ALL_SERVICE_BINDINGS);
+        then().she_should_get_$_service_bindings(4, ALL_SERVICE_BINDINGS);
     }
 
     @Test
@@ -156,20 +154,19 @@ public class ListServiceBindingsTest extends SimpleScenarioTest<ServiceBindingsS
     public void paas_ops_lists_service_broker_service_bindings_for_a_service_plan() throws Exception {
         given().service_bindings(ALL_SERVICE_BINDINGS);
         when().paas_ops_lists_service_broker_$_service_bindings_for_service_plan_name("p-redis", "dedicated-vm");
-        then().she_should_get_service_bindings
-                (
-                        ImmutableServiceBindingDetail.builder()
-                                .id("bbb")
-                                .serviceInstanceId("my-redis-211-id")
-                                .serviceInstanceName("my-redis-211")
-                                .servicePlan("dedicated-vm")
-                                .service("p-redis")
-                                .space("space11")
-                                .organization("org1")
-                                .applicationId("my-app-id")
-                                .applicationName("my-app")
-                                .build()
-                );
+        then().she_should_get_$_service_bindings(1,
+                ImmutableServiceBindingDetail.builder()
+                        .id("bbb")
+                        .serviceInstanceId("my-redis-211-id")
+                        .serviceInstanceName("my-redis-211")
+                        .servicePlan("dedicated-vm")
+                        .service("p-redis")
+                        .space("space11")
+                        .organization("org1")
+                        .applicationId("my-app-id")
+                        .applicationName("my-app")
+                        .build()
+        );
     }
 
     @Test
@@ -183,20 +180,19 @@ public class ListServiceBindingsTest extends SimpleScenarioTest<ServiceBindingsS
     public void paas_ops_lists_service_broker_service_bindings_for_a_service_instance() throws Exception {
         given().service_bindings(ALL_SERVICE_BINDINGS);
         when().paas_ops_lists_service_broker_$_service_bindings_for_service_instance("p-redis", "my-redis-112");
-        then().she_should_get_service_bindings
-                (
-                        ImmutableServiceBindingDetail.builder()
-                                .id("ccc")
-                                .serviceInstanceId("my-redis-112-id")
-                                .serviceInstanceName("my-redis-112")
-                                .servicePlan("shared-vm")
-                                .service("p-redis")
-                                .space("space12")
-                                .organization("org2")
-                                .applicationId("my-app-id")
-                                .applicationName("my-app")
-                                .build()
-                );
+        then().she_should_get_$_service_bindings(1,
+                ImmutableServiceBindingDetail.builder()
+                        .id("ccc")
+                        .serviceInstanceId("my-redis-112-id")
+                        .serviceInstanceName("my-redis-112")
+                        .servicePlan("shared-vm")
+                        .service("p-redis")
+                        .space("space12")
+                        .organization("org2")
+                        .applicationId("my-app-id")
+                        .applicationName("my-app")
+                        .build()
+        );
     }
 
     @Test

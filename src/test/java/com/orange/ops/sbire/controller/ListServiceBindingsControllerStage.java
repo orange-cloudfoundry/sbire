@@ -1,11 +1,10 @@
 package com.orange.ops.sbire.controller;
 
-import com.orange.ops.sbire.domain.ImmutableListServiceBindingsRequest;
-import com.orange.ops.sbire.domain.ImmutableServiceBindingDetail;
-import com.orange.ops.sbire.domain.ServiceBindingsService;
+import com.orange.ops.sbire.domain.*;
 import com.tngtech.jgiven.Stage;
 import com.tngtech.jgiven.annotation.Table;
 import com.tngtech.jgiven.integration.spring.JGivenStage;
+import org.cloudfoundry.client.v2.Metadata;
 import org.mockito.Answers;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,10 +13,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
+import java.util.stream.Stream;
+
+import static org.cloudfoundry.util.test.TestObjects.fill;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -35,11 +36,28 @@ public class ListServiceBindingsControllerStage extends Stage<ListServiceBinding
 
     private ResultActions perform;
 
+    private static ImmutableListServiceBindingsResponse toListServiceBindingsResponse(ImmutableServiceBindingDetail... serviceBindings) {
+
+        final ImmutableListServiceBindingsResponse.Builder responseBuilder = fill(ImmutableListServiceBindingsResponse.builder());
+
+        Stream.of(serviceBindings)
+                .map(serviceBinding -> ImmutableServiceBindingDetailResource.builder()
+                        .metadata(fill(Metadata.builder())
+                                .id(serviceBinding.getId())
+                                .build())
+                        .entity(fill(ImmutableServiceBindingDetail.builder()).build())
+                        .build()
+                )
+                .forEach(responseBuilder::addResources);
+
+        return responseBuilder.totalResults(1).build();
+    }
+
     public ListServiceBindingsControllerStage service_broker_service_bindings(@Table ImmutableServiceBindingDetail... serviceBindings) {
         BDDMockito.given(this.serviceBindingsService.list(ImmutableListServiceBindingsRequest.builder()
                 .serviceBrokerName("p-redis")
                 .build()))
-                .willReturn(Flux.just(serviceBindings));
+                .willReturn(Mono.just(toListServiceBindingsResponse(serviceBindings)));
         return self();
     }
 
@@ -48,7 +66,7 @@ public class ListServiceBindingsControllerStage extends Stage<ListServiceBinding
                 .serviceBrokerName("p-redis")
                 .orgName("org1")
                 .build()))
-                .willReturn(Flux.just(serviceBindings));
+                .willReturn(Mono.just(toListServiceBindingsResponse(serviceBindings)));
         return self();
     }
 
@@ -58,7 +76,7 @@ public class ListServiceBindingsControllerStage extends Stage<ListServiceBinding
                 .orgName("org1")
                 .spaceName("space12")
                 .build()))
-                .willReturn(Flux.just(serviceBindings));
+                .willReturn(Mono.just(toListServiceBindingsResponse(serviceBindings)));
         return self();
     }
 
@@ -67,7 +85,7 @@ public class ListServiceBindingsControllerStage extends Stage<ListServiceBinding
                 .serviceBrokerName("p-redis")
                 .serviceLabel("p-redis")
                 .build()))
-                .willReturn(Flux.just(serviceBindings));
+                .willReturn(Mono.just(toListServiceBindingsResponse(serviceBindings)));
         return self();
     }
 
@@ -76,7 +94,7 @@ public class ListServiceBindingsControllerStage extends Stage<ListServiceBinding
                 .serviceBrokerName("p-redis")
                 .servicePlanName("dedicated-vm")
                 .build()))
-                .willReturn(Flux.just(serviceBindings));
+                .willReturn(Mono.just(toListServiceBindingsResponse(serviceBindings)));
         return self();
     }
 
@@ -85,17 +103,12 @@ public class ListServiceBindingsControllerStage extends Stage<ListServiceBinding
                 .serviceBrokerName("p-redis")
                 .serviceInstanceName("my-redis-112")
                 .build()))
-                .willReturn(Flux.just(serviceBindings));
+                .willReturn(Mono.just(toListServiceBindingsResponse(serviceBindings)));
         return self();
     }
 
     public ListServiceBindingsControllerStage paas_ops_lists_service_broker_service_bindings(String query) throws Exception {
         perform = this.mvc.perform(get(query).accept(MediaType.APPLICATION_JSON));
-        return self();
-    }
-
-    public ListServiceBindingsControllerStage paas_ops_POST_$_to_rebind_service_bindings(String query) throws Exception {
-        perform = this.mvc.perform(post(query).accept(MediaType.APPLICATION_JSON));
         return self();
     }
 

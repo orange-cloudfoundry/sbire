@@ -36,8 +36,6 @@ public class DefaultServiceBindingsServiceIT {
                 .serviceBrokerName(SERVICE_BROKER_NAME)
                 .build())
                 .doOnNext(System.out::println)
-                .count()
-                .doOnNext(System.out::println)
                 .then()
                 .block(Duration.ofMinutes(5L));
     }
@@ -50,8 +48,6 @@ public class DefaultServiceBindingsServiceIT {
                 .orgName(testOrgName)
                 .build())
                 .doOnNext(System.out::println)
-                .count()
-                .doOnNext(System.out::println)
                 .block(Duration.ofMinutes(5));
     }
 
@@ -63,8 +59,6 @@ public class DefaultServiceBindingsServiceIT {
                 .orgName(testOrgName)
                 .spaceName(testSpace)
                 .build())
-                .doOnNext(System.out::println)
-                .count()
                 .doOnNext(System.out::println)
                 .block(Duration.ofMinutes(5));
     }

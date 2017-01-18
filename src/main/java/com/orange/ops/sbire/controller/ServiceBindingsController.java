@@ -1,19 +1,17 @@
 package com.orange.ops.sbire.controller;
 
-import com.orange.ops.sbire.domain.ImmutableListServiceBindingsRequest;
-import com.orange.ops.sbire.domain.ImmutableRebindServiceBindingsRequest;
-import com.orange.ops.sbire.domain.ServiceBindingDetail;
-import com.orange.ops.sbire.domain.ServiceBindingsService;
+import com.orange.ops.sbire.domain.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Optional;
 
 /**
+ * @see <a href="https://github.com/orange-cloudfoundry/sbire">API spec</a>
+ *
  * @author Sebastien Bortolussi
  */
 @RestController
@@ -43,12 +41,12 @@ public class ServiceBindingsController {
      * <p>
      **/
     @GetMapping(value = "/v1/service_brokers/{brokerName}/service_bindings")
-    public List<ServiceBindingDetail> listServiceBindings(@PathVariable("brokerName") String brokerName,
-                                                          @RequestParam("org_name") Optional<String> orgName,
-                                                          @RequestParam("space_name") Optional<String> spaceName,
-                                                          @RequestParam("service_label") Optional<String> serviceLabel,
-                                                          @RequestParam("plan_name") Optional<String> planName,
-                                                          @RequestParam("instance_name") Optional<String> instanceName) {
+    public ListServiceBindingsResponse listServiceBindings(@PathVariable("brokerName") String brokerName,
+                                                           @RequestParam("org_name") Optional<String> orgName,
+                                                           @RequestParam("space_name") Optional<String> spaceName,
+                                                           @RequestParam("service_label") Optional<String> serviceLabel,
+                                                           @RequestParam("plan_name") Optional<String> planName,
+                                                           @RequestParam("instance_name") Optional<String> instanceName) {
         return serviceBindingsService.list(ImmutableListServiceBindingsRequest.builder()
                 .serviceBrokerName(brokerName)
                 .orgName(orgName)
@@ -57,7 +55,6 @@ public class ServiceBindingsController {
                 .servicePlanName(planName)
                 .serviceInstanceName(instanceName)
                 .build())
-                .collectList()
                 .block(Duration.ofMinutes(timeout));
     }
 
@@ -76,12 +73,12 @@ public class ServiceBindingsController {
      **/
     @PostMapping(value = "/v1/service_brokers/{brokerName}/service_bindings")
     @ResponseStatus(HttpStatus.CREATED)
-    public List<ServiceBindingDetail> rebindServiceBindings(@PathVariable("brokerName") String brokerName,
-                                                            @RequestParam("org_name") Optional<String> orgName,
-                                                            @RequestParam("space_name") Optional<String> spaceName,
-                                                            @RequestParam("service_label") Optional<String> serviceLabel,
-                                                            @RequestParam("plan_name") Optional<String> planName,
-                                                            @RequestParam("instance_name") Optional<String> instanceName) {
+    public RebindServiceBindingsResponse rebindServiceBindings(@PathVariable("brokerName") String brokerName,
+                                                               @RequestParam("org_name") Optional<String> orgName,
+                                                               @RequestParam("space_name") Optional<String> spaceName,
+                                                               @RequestParam("service_label") Optional<String> serviceLabel,
+                                                               @RequestParam("plan_name") Optional<String> planName,
+                                                               @RequestParam("instance_name") Optional<String> instanceName) {
         return serviceBindingsService.rebind(ImmutableRebindServiceBindingsRequest.builder()
                 .serviceBrokerName(brokerName)
                 .orgName(orgName)
@@ -90,7 +87,6 @@ public class ServiceBindingsController {
                 .servicePlanName(planName)
                 .serviceInstanceName(instanceName)
                 .build())
-                .collectList()
                 .block(Duration.ofMinutes(timeout));
     }
 
