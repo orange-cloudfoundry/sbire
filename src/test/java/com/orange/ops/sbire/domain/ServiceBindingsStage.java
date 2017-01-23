@@ -40,7 +40,6 @@ import static org.mockito.Mockito.mock;
 public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
 
     public static final int TIMEOUT_SECONDS = 5;
-
     protected final Spaces spaces = mock(Spaces.class, RETURNS_SMART_NULLS);
     protected final ServiceBrokers serviceBrokers = mock(ServiceBrokers.class, RETURNS_SMART_NULLS);
     protected final Services services = mock(Services.class, RETURNS_SMART_NULLS);
@@ -50,7 +49,10 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
     protected final ApplicationsV2 applicationsV2 = mock(ApplicationsV2.class, RETURNS_SMART_NULLS);
     private final Organizations organizations = mock(Organizations.class, RETURNS_SMART_NULLS);
     private final CloudFoundryClient cloudFoundryClient = mock(CloudFoundryClient.class, RETURNS_SMART_NULLS);
-    private final DefaultServiceBindingsService serviceBindingsService = new DefaultServiceBindingsService(cloudFoundryClient);
+    private ServiceBrokerBlacklist blacklistEmpty = ImmutableServiceBrokerBlacklist.builder().build();
+    private final DefaultServiceBindingsService serviceBindingsService = new DefaultServiceBindingsService(cloudFoundryClient, blacklistEmpty);
+    private ServiceBrokerBlacklist blacklistPRedis = ImmutableServiceBrokerBlacklist.builder().addServiceBrokers("p-redis").build();
+    private final DefaultServiceBindingsService serviceBindingsServiceWithBlacklistedServiceBroker = new DefaultServiceBindingsService(cloudFoundryClient, blacklistPRedis);
     private Mono<com.orange.ops.sbire.domain.ListServiceBindingsResponse> listServiceBindings;
     private Mono<RebindServiceBindingsResponse> rebindServiceBindings;
 
@@ -220,6 +222,23 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
                                 .build()));
     }
 
+    private static void requestGetServiceBroker(CloudFoundryClient cloudFoundryClient, String serviceBrokerName, String serviceBrokerId) {
+        Mockito.when(cloudFoundryClient.serviceBrokers()
+                .get(GetServiceBrokerRequest.builder()
+                        .serviceBrokerId(serviceBrokerId)
+                        .build()))
+                .thenReturn(Mono
+                        .just(fill(GetServiceBrokerResponse.builder())
+                                .metadata(fill(Metadata.builder())
+                                        .id(serviceBrokerId)
+                                        .build())
+                                .entity(fill(ServiceBrokerEntity.builder())
+                                        .name(serviceBrokerName)
+                                        .build())
+                                .build())
+                );
+    }
+
     private static void requestUnknownListServiceBrokers(CloudFoundryClient cloudFoundryClient, String serviceBrokerName) {
         Mockito.when(cloudFoundryClient.serviceBrokers()
                 .list(ListServiceBrokersRequest.builder()
@@ -273,7 +292,7 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
                         .just(responseBuilder.build()));
     }
 
-    private static void requestGetService(CloudFoundryClient cloudFoundryClient, String serviceId, String service) {
+    private static void requestGetService(CloudFoundryClient cloudFoundryClient, String serviceId, String service, String serviceBrokerId) {
         Mockito.when(cloudFoundryClient.services()
                 .get(GetServiceRequest.builder()
                         .serviceId(serviceId)
@@ -286,6 +305,7 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
                                 .entity(fill(ServiceEntity.builder())
                                         .extra("{\"displayName\":\"test-value\",\"longDescription\":\"value\",\"documentationUrl\":\"documentation-url\",\"supportUrl\":\"value\"}")
                                         .label(service)
+                                        .serviceBrokerId(serviceBrokerId)
                                         .build())
                                 .build()));
     }
@@ -526,14 +546,16 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
         requestUnknownOrganizations(this.cloudFoundryClient, "dummy");
 
 
-        requestListServiceBrokers(this.cloudFoundryClient, "p-redis", "p-redis");
+        requestListServiceBrokers(this.cloudFoundryClient, "p-redis", "p-redis-id");
+        requestGetServiceBroker(this.cloudFoundryClient, "p-redis", "p-redis-id");
+
         requestUnknownListServiceBrokers(this.cloudFoundryClient, "dummy");
 
-        requestListServices(this.cloudFoundryClient, "p-redis", "p-redis", "p-redis");
+        requestListServices(this.cloudFoundryClient, "p-redis-id", "p-redis", "p-redis");
         requestListServiceServicePlans(this.cloudFoundryClient, "p-redis",
                 ImmutableServicePlanSummary.builder().id("shared-vm").name("shared-vm").service("p-redis").build(),
                 ImmutableServicePlanSummary.builder().id("dedicated-vm").name("dedicated-vm").service("p-redis").build());
-        requestGetService(this.cloudFoundryClient, "p-redis", "p-redis");
+        requestGetService(this.cloudFoundryClient, "p-redis", "p-redis", "p-redis-id");
         requestGetApplication(this.cloudFoundryClient, "my-app-id", "my-app");
         requestListServicePlanServiceInstances(this.cloudFoundryClient, "shared-vm", "space11", "my-redis-111-id", "my-redis-111");
         requestListServicePlanServiceInstances(this.cloudFoundryClient, "dedicated-vm", "space11", "my-redis-211-id", "my-redis-211");
@@ -555,10 +577,10 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
         requestListServiceBindings(cloudFoundryClient, "ccc", "my-redis-112-id", "my-app-id");
         requestListServiceBindings(cloudFoundryClient, "ddd", "my-redis-122-id", "my-app-id");
 
-        requestCreateServiceBinding(cloudFoundryClient, "my-app-id", "my-redis-111-id", null, "eee");
-        requestCreateServiceBinding(cloudFoundryClient, "my-app-id", "my-redis-211-id", null, "fff");
-        requestCreateServiceBinding(cloudFoundryClient, "my-app-id", "my-redis-112-id", null, "ggg");
-        requestCreateServiceBinding(cloudFoundryClient, "my-app-id", "my-redis-122-id", null, "hhh");
+        requestCreateServiceBinding(cloudFoundryClient, "my-app-id", "my-redis-111-id", null, "mmm");
+        requestCreateServiceBinding(cloudFoundryClient, "my-app-id", "my-redis-211-id", null, "nnn");
+        requestCreateServiceBinding(cloudFoundryClient, "my-app-id", "my-redis-112-id", null, "ooo");
+        requestCreateServiceBinding(cloudFoundryClient, "my-app-id", "my-redis-122-id", null, "ppp");
 
         requestDeleteServiceBinding(this.cloudFoundryClient, "aaa");
         requestDeleteServiceBinding(this.cloudFoundryClient, "bbb");
@@ -718,6 +740,13 @@ public class ServiceBindingsStage extends Stage<ServiceBindingsStage> {
         rebindServiceBindings = serviceBindingsService.rebind(ImmutableRebindServiceBindingsRequest.builder()
                 .serviceBrokerName(serviceBroker)
                 .serviceInstanceName(serviceInstanceName)
+                .build());
+        return self();
+    }
+
+    public ServiceBindingsStage paas_ops_lists_blacklisted_service_broker_$_service_bindings(String serviceBroker) {
+        listServiceBindings = serviceBindingsServiceWithBlacklistedServiceBroker.list(ImmutableListServiceBindingsRequest.builder()
+                .serviceBrokerName(serviceBroker)
                 .build());
         return self();
     }

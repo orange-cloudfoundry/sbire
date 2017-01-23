@@ -46,6 +46,11 @@ public abstract class ServiceBindingDetail {
     public abstract String getService();
 
     /**
+     * The service broker name of the service service binding.
+     */
+    public abstract String getServiceBroker();
+
+    /**
      * The space name of the service service binding.
      */
     public abstract String getSpace();
