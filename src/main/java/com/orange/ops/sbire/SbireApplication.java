@@ -9,4 +9,5 @@ public class SbireApplication {
     public static void main(String[] args) {
         SpringApplication.run(SbireApplication.class, args);
     }
+
 }
